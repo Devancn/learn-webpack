@@ -36,8 +36,12 @@ class Compiler {
       let entryFilePath = toUnixPath(
         path.join(this.options.context, entry[entryName])
       );
-      let entryModule = this.buildModule(entryFilePath);
-      let chunk = { name: entryName, entryModule, modules: this.modules };
+      let entryModule = this.buildModule(entryName, entryFilePath);
+      let chunk = {
+        name: entryName,
+        entryModule,
+        modules: this.modules.filter((module) => module.name === entryName),
+      };
       this.chunks.push(chunk);
     }
 
@@ -56,7 +60,7 @@ class Compiler {
     }
     this.hooks.done.call();
   }
-  buildModule = (modulePath) => {
+  buildModule = (name, modulePath) => {
     let targetSourceCode, originalSourceCode;
     targetSourceCode = originalSourceCode = fs.readFileSync(
       modulePath,
@@ -80,12 +84,12 @@ class Compiler {
     console.log(`targetSourceCode`, targetSourceCode);
 
     let moduleId = "./" + path.posix.relative(baseDir, modulePath);
-    let module = { id: moduleId, dependencies: [] };
+    let module = { id: moduleId, dependencies: [], name };
     let astTree = parser.parse(targetSourceCode, { sourceType: "module" });
 
     traverse(astTree, {
       CallExpression: ({ node }) => {
-        console.log(node, 'node')
+        console.log(node, "node");
         if (node.callee.name === "require") {
           let moduleName = node.arguments[0].value;
           let dirname = path.posix.dirname(modulePath);
@@ -106,9 +110,9 @@ class Compiler {
 
     let { code } = generator(astTree);
     module._source = code;
-    
+
     module.dependencies.forEach((dependency) => {
-      let dependencyModule = this.buildModule(dependency);
+      let dependencyModule = this.buildModule(name, dependency);
       this.modules.push(dependencyModule);
     });
     return module;
