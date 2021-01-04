@@ -11,5 +11,11 @@
   "license": "ISC",
   "devDependencies": {
     "tapable": "^2.2.0"
+  },
+  "dependencies": {
+    "@babel/generator": "^7.12.11",
+    "@babel/parser": "^7.12.11",
+    "@babel/traverse": "^7.12.12",
+    "babel-types": "^6.26.0"
   }
 }
