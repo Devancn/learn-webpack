@@ -15,6 +15,7 @@ class Compiler {
     this.options = options;
     this.modules = [];
     this.chunks = [];
+    this.entries = [];
     this.assets = {};
     this.files = [];
     this.hooks = {
@@ -24,24 +25,33 @@ class Compiler {
   }
   run() {
     this.hooks.run.call();
+    let entry = {};
+    if (typeof this.options.entry === "string") {
+      entry.main = this.options.entry;
+    } else {
+      entry = this.options.entry;
+    }
 
-    let entry = toUnixPath(path.join(this.options.context, this.options.entry));
+    for (let entryName in entry) {
+      let entryFilePath = toUnixPath(
+        path.join(this.options.context, entry[entryName])
+      );
+      let entryModule = this.buildModule(entryFilePath);
+      let chunk = { name: entryName, entryModule, modules: this.modules };
+      this.chunks.push(chunk);
+    }
 
-    let entryModule = this.buildModule(entry);
     // this.modules.push(entryModule);
 
-    let chunk = { name: "main", entryModule, modules: this.modules };
-    this.chunks.push(chunk);
     this.chunks.forEach((chunk) => {
-      this.assets[chunk.name + ".js"] = getSource(chunk);
+      let filename = this.options.output.filename.replace("[name]", chunk.name);
+      this.assets[filename] = getSource(chunk);
     });
 
     this.files = Object.keys(this.assets);
-    let targetPath = path.join(
-      this.options.output.path,
-      this.options.output.filename
-    );
+
     for (let file in this.assets) {
+      let targetPath = path.join(this.options.output.path, file);
       fs.writeFileSync(targetPath, this.assets[file]);
     }
     this.hooks.done.call();
@@ -75,6 +85,7 @@ class Compiler {
 
     traverse(astTree, {
       CallExpression: ({ node }) => {
+        console.log(node, 'node')
         if (node.callee.name === "require") {
           let moduleName = node.arguments[0].value;
           let dirname = path.posix.dirname(modulePath);
@@ -95,6 +106,7 @@ class Compiler {
 
     let { code } = generator(astTree);
     module._source = code;
+    
     module.dependencies.forEach((dependency) => {
       let dependencyModule = this.buildModule(dependency);
       this.modules.push(dependencyModule);

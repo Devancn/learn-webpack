@@ -9,6 +9,14 @@
           let name = require("./src/name.js");
 
 module.exports = "hello" + name; //2//1
+        },
+        "./src/name.js": (module,exports,require) => {
+          module.exports = 'Devan'; //2//1
+        },
+        "./src/title.js": (module,exports,require) => {
+          let name = require("./src/name.js");
+
+module.exports = "hello" + name; //2//1
         } 
     }
     var cache = {};
@@ -25,7 +33,8 @@ module.exports = "hello" + name; //2//1
     (() => {
       let title = require("./src/title.js");
 
-console.log(title); //2//1
+console.log(title);
+console.log(3333); //2//1
     })()
    })()
   
